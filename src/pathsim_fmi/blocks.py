@@ -16,8 +16,8 @@ from pathsim.events.zerocrossing import ZeroCrossing
 
 from .wrapper import FMUWrapper
 
-
 # BLOCKS ================================================================================
+
 
 class CoSimulationFMU(Block):
     """Co-Simulation FMU block using FMPy with support for FMI 2.0 and FMI 3.0.
@@ -53,7 +53,7 @@ class CoSimulationFMU(Block):
         self.start_values = start_values
 
         # Create and initialize FMU wrapper
-        self.fmu_wrapper = FMUWrapper(fmu_path, instance_name, mode='cosimulation')
+        self.fmu_wrapper = FMUWrapper(fmu_path, instance_name, mode="cosimulation")
         self.fmu_wrapper.initialize(start_values, start_time=0.0)
 
         # Determine step size
@@ -65,32 +65,21 @@ class CoSimulationFMU(Block):
         self.inputs, self.outputs = self.fmu_wrapper.create_port_registers()
 
         # Scheduled co-simulation step
-        self.events = [
-            Schedule(
-                t_start=0, 
-                t_period=self.dt, 
-                func_act=self._step_fmu
-                )
-            ]
+        self.events = [Schedule(t_start=0, t_period=self.dt, func_act=self._step_fmu)]
 
         # Read initial outputs
         self.outputs.update_from_array(self.fmu_wrapper.get_outputs_as_array())
-
 
     def _step_fmu(self, t):
         """Perform one FMU co-simulation step."""
         self.fmu_wrapper.set_inputs_from_array(self.inputs.to_array())
 
-        result = self.fmu_wrapper.do_step(
-            current_time=t, 
-            step_size=self.dt
-            )
+        result = self.fmu_wrapper.do_step(current_time=t, step_size=self.dt)
 
         if result.terminate_simulation:
             raise RuntimeError("FMU requested simulation termination")
 
         self.outputs.update_from_array(self.fmu_wrapper.get_outputs_as_array())
-
 
     def reset(self):
         """Reset the FMU instance."""
@@ -98,7 +87,6 @@ class CoSimulationFMU(Block):
         self.fmu_wrapper.reset()
         self.fmu_wrapper.initialize(self.start_values, start_time=0.0)
         self.outputs.update_from_array(self.fmu_wrapper.get_outputs_as_array())
-
 
     def __len__(self):
         """FMU is a discrete time source-like block without direct passthrough."""
@@ -135,15 +123,21 @@ class ModelExchangeFMU(DynamicalSystem):
         dynamic time event for FMU-scheduled events
     """
 
-    def __init__(self, fmu_path, instance_name="fmu_instance", start_values=None,
-                 tolerance=1e-10, verbose=False):
+    def __init__(
+        self,
+        fmu_path,
+        instance_name="fmu_instance",
+        start_values=None,
+        tolerance=1e-10,
+        verbose=False,
+    ):
 
         self.tolerance = tolerance
         self.verbose = verbose
         self.start_values = start_values
 
         # Create and initialize FMU wrapper
-        self.fmu_wrapper = FMUWrapper(fmu_path, instance_name, mode='model_exchange')
+        self.fmu_wrapper = FMUWrapper(fmu_path, instance_name, mode="model_exchange")
         event_info = self.fmu_wrapper.initialize(start_values, start_time=0.0, tolerance=tolerance)
 
         # Store initial time event if defined
@@ -164,7 +158,7 @@ class ModelExchangeFMU(DynamicalSystem):
             func_dyn=self._get_derivatives,
             func_alg=self._get_outputs,
             initial_value=self.fmu_wrapper.get_continuous_states(),
-            jac_dyn=jac_func
+            jac_dyn=jac_func,
         )
 
         # Setup block I/O from FMU variables
@@ -179,9 +173,9 @@ class ModelExchangeFMU(DynamicalSystem):
                 ZeroCrossing(
                     func_evt=lambda t, idx=i: self._get_event_indicator(idx),
                     func_act=self._handle_event,
-                    tolerance=self.tolerance
-                    )
+                    tolerance=self.tolerance,
                 )
+            )
 
         # Cache capability flag for sample() performance
         self._needs_completed_integrator_step = self.fmu_wrapper.needs_completed_integrator_step
@@ -189,7 +183,6 @@ class ModelExchangeFMU(DynamicalSystem):
         # Schedule initial time event if any
         if self._initial_time_event is not None:
             self._update_time_events(self._initial_time_event)
-
 
     def _get_derivatives(self, x, u, t):
         """Evaluate FMU derivatives (RHS of ODE)."""
@@ -202,7 +195,6 @@ class ModelExchangeFMU(DynamicalSystem):
 
         return self.fmu_wrapper.get_derivatives()
 
-
     def _get_jacobian(self, x, u, t):
         """Evaluate Jacobian of FMU derivatives w.r.t. states (∂ẋ/∂x)."""
         self.fmu_wrapper.set_time(t)
@@ -210,7 +202,6 @@ class ModelExchangeFMU(DynamicalSystem):
         self.fmu_wrapper.set_inputs_from_array(u)
 
         return self.fmu_wrapper.get_state_jacobian()
-
 
     def _get_outputs(self, x, u, t):
         """Evaluate FMU outputs (algebraic part)."""
@@ -220,11 +211,9 @@ class ModelExchangeFMU(DynamicalSystem):
 
         return self.fmu_wrapper.get_outputs_as_array()
 
-
     def _get_event_indicator(self, idx):
         """Get value of a specific event indicator."""
         return self.fmu_wrapper.get_event_indicators()[idx]
-
 
     def _handle_event(self, t):
         """Handle FMU event with fixed-point iteration for discrete states."""
@@ -258,19 +247,17 @@ class ModelExchangeFMU(DynamicalSystem):
             if self.verbose:
                 print(f"Next time event scheduled at t={event_info.next_event_time}")
 
-
     def _update_time_events(self, next_time):
         """Update or create time event schedule."""
         if self.time_event is None:
             self.time_event = ScheduleList(
                 times_evt=[next_time],
                 func_act=self._handle_event,
-                tolerance=self.tolerance
+                tolerance=self.tolerance,
             )
             self.events.append(self.time_event)
         elif next_time not in self.time_event.times_evt:
             bisect.insort(self.time_event.times_evt, next_time)
-
 
     def sample(self, t, dt):
         """Sample block after successful timestep and handle FMU step completion events."""
@@ -286,7 +273,6 @@ class ModelExchangeFMU(DynamicalSystem):
                 if self.verbose:
                     print(f"Step completion event at t={t}")
                 self._handle_event(t)
-
 
     def reset(self):
         """Reset the FMU instance."""

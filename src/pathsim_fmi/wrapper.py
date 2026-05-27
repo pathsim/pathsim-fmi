@@ -7,15 +7,15 @@
 
 # IMPORTS ===============================================================================
 
-import numpy as np
 import ctypes
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
+import numpy as np
 from pathsim.utils.register import Register
 
-
 # HELPER CLASSES ========================================================================
+
 
 @dataclass
 class EventInfo:
@@ -36,6 +36,7 @@ class EventInfo:
     next_event_time : float
         time of next scheduled event (if defined)
     """
+
     discrete_states_need_update: bool = False
     terminate_simulation: bool = False
     nominals_changed: bool = False
@@ -59,6 +60,7 @@ class StepResult:
     last_successful_time : float
         last time successfully reached (FMI 3.0 only)
     """
+
     event_encountered: bool = False
     terminate_simulation: bool = False
     early_return: bool = False
@@ -66,6 +68,7 @@ class StepResult:
 
 
 # FMI VERSION-SPECIFIC OPERATIONS =======================================================
+
 
 class _FMI2Ops:
     """FMI 2.0 specific operations."""
@@ -108,7 +111,7 @@ class _FMI2Ops:
             nominals_changed=result[2],
             values_changed=result[3],
             next_event_time_defined=result[4],
-            next_event_time=result[5]
+            next_event_time=result[5],
         )
 
     @staticmethod
@@ -121,8 +124,8 @@ class _FMI2Ops:
 
     @staticmethod
     def exit_initialization_mode(fmu, mode):
-        result = fmu.exitInitializationMode()
         # FMI 2.0 doesn't return event info from exitInitializationMode
+        fmu.exitInitializationMode()
         return None
 
 
@@ -152,7 +155,7 @@ class _FMI3Ops:
             event_encountered=event,
             terminate_simulation=terminate,
             early_return=early,
-            last_successful_time=last_time
+            last_successful_time=last_time,
         )
 
     @staticmethod
@@ -172,7 +175,7 @@ class _FMI3Ops:
             nominals_changed=result[2],
             values_changed=result[3],
             next_event_time_defined=result[4],
-            next_event_time=result[5]
+            next_event_time=result[5],
         )
 
     @staticmethod
@@ -188,19 +191,22 @@ class _FMI3Ops:
     def exit_initialization_mode(fmu, mode):
         result = fmu.exitInitializationMode()
         # FMI 3.0 Model Exchange returns event info
-        if mode == 'model_exchange' and hasattr(result, 'nextEventTimeDefined'):
+        if mode == "model_exchange" and hasattr(result, "nextEventTimeDefined"):
             return EventInfo(
-                discrete_states_need_update=bool(getattr(result, 'discreteStatesNeedUpdate', False)),
-                terminate_simulation=bool(getattr(result, 'terminateSimulation', False)),
-                nominals_changed=bool(getattr(result, 'nominalsOfContinuousStatesChanged', False)),
-                values_changed=bool(getattr(result, 'valuesOfContinuousStatesChanged', False)),
-                next_event_time_defined=bool(getattr(result, 'nextEventTimeDefined', False)),
-                next_event_time=float(getattr(result, 'nextEventTime', 0.0))
+                discrete_states_need_update=bool(
+                    getattr(result, "discreteStatesNeedUpdate", False)
+                ),
+                terminate_simulation=bool(getattr(result, "terminateSimulation", False)),
+                nominals_changed=bool(getattr(result, "nominalsOfContinuousStatesChanged", False)),
+                values_changed=bool(getattr(result, "valuesOfContinuousStatesChanged", False)),
+                next_event_time_defined=bool(getattr(result, "nextEventTimeDefined", False)),
+                next_event_time=float(getattr(result, "nextEventTime", 0.0)),
             )
         return None
 
 
 # MAIN WRAPPER CLASS ====================================================================
+
 
 class FMUWrapper:
     """Version-agnostic wrapper for FMI 2.0 and 3.0 FMUs.
@@ -246,9 +252,9 @@ class FMUWrapper:
 
         # Import FMPy (lazy import to avoid dependency if not used)
         try:
-            from fmpy import read_model_description, extract
-            from fmpy.fmi2 import FMU2Slave, FMU2Model
-            from fmpy.fmi3 import FMU3Slave, FMU3Model
+            from fmpy import extract, read_model_description
+            from fmpy.fmi2 import FMU2Model, FMU2Slave
+            from fmpy.fmi3 import FMU3Model, FMU3Slave
         except ImportError:
             raise ImportError("FMPy is required for FMU support. Install with: pip install fmpy")
 
@@ -256,7 +262,7 @@ class FMUWrapper:
         self.instance_name = instance_name
         self.mode = mode.lower()
 
-        if self.mode not in ['cosimulation', 'model_exchange']:
+        if self.mode not in ["cosimulation", "model_exchange"]:
             raise ValueError(f"Invalid mode '{mode}'. Must be 'cosimulation' or 'model_exchange'")
 
         # Read model description and detect FMI version
@@ -264,7 +270,7 @@ class FMUWrapper:
         self.fmi_version = self.model_description.fmiVersion
 
         # Select version-specific operations
-        self._ops = _FMI2Ops if self.fmi_version.startswith('2.') else _FMI3Ops
+        self._ops = _FMI2Ops if self.fmi_version.startswith("2.") else _FMI3Ops
 
         # Extract FMU
         self.unzipdir = extract(fmu_path)
@@ -273,7 +279,7 @@ class FMUWrapper:
         self._build_variable_maps()
 
         # Get state and event info for Model Exchange
-        if self.mode == 'model_exchange':
+        if self.mode == "model_exchange":
             self.n_states = self.model_description.numberOfContinuousStates
             self.n_event_indicators = self.model_description.numberOfEventIndicators
             self._build_state_derivative_maps()
@@ -290,35 +296,35 @@ class FMUWrapper:
         """Create the appropriate FMU instance based on version and mode."""
         md = self.model_description
 
-        if self.fmi_version.startswith('2.'):
-            if self.mode == 'cosimulation':
+        if self.fmi_version.startswith("2."):
+            if self.mode == "cosimulation":
                 return FMU2Slave(
                     guid=md.guid,
                     unzipDirectory=self.unzipdir,
                     modelIdentifier=md.coSimulation.modelIdentifier,
-                    instanceName=self.instance_name
+                    instanceName=self.instance_name,
                 )
             else:
                 return FMU2Model(
                     guid=md.guid,
                     unzipDirectory=self.unzipdir,
                     modelIdentifier=md.modelExchange.modelIdentifier,
-                    instanceName=self.instance_name
+                    instanceName=self.instance_name,
                 )
-        elif self.fmi_version.startswith('3.'):
-            if self.mode == 'cosimulation':
+        elif self.fmi_version.startswith("3."):
+            if self.mode == "cosimulation":
                 return FMU3Slave(
                     guid=md.guid,
                     unzipDirectory=self.unzipdir,
                     modelIdentifier=md.coSimulation.modelIdentifier,
-                    instanceName=self.instance_name
+                    instanceName=self.instance_name,
                 )
             else:
                 return FMU3Model(
                     guid=md.guid,
                     unzipDirectory=self.unzipdir,
                     modelIdentifier=md.modelExchange.modelIdentifier,
-                    instanceName=self.instance_name
+                    instanceName=self.instance_name,
                 )
         else:
             raise ValueError(f"Unsupported FMI version: {self.fmi_version}")
@@ -330,9 +336,9 @@ class FMUWrapper:
         self.output_refs = {}
 
         for variable in self.model_description.modelVariables:
-            if variable.causality == 'input':
+            if variable.causality == "input":
                 self.input_refs[variable.name] = variable.valueReference
-            elif variable.causality == 'output':
+            elif variable.causality == "output":
                 self.output_refs[variable.name] = variable.valueReference
 
     def _build_state_derivative_maps(self):
@@ -373,8 +379,9 @@ class FMUWrapper:
 
         return inputs, outputs
 
-    def initialize(self, start_values=None, start_time=0.0, stop_time=None,
-                   tolerance=None) -> Optional[EventInfo]:
+    def initialize(
+        self, start_values=None, start_time=0.0, stop_time=None, tolerance=None
+    ) -> Optional[EventInfo]:
         """Complete FMU initialization sequence.
 
         Performs: instantiate -> setup_experiment -> enter_initialization_mode
@@ -411,7 +418,7 @@ class FMUWrapper:
         """Get default step size from FMU's default experiment, if defined."""
         de = self.model_description.defaultExperiment
         if de is not None:
-            return getattr(de, 'stepSize', None)
+            return getattr(de, "stepSize", None)
         return None
 
     @property
@@ -419,26 +426,26 @@ class FMUWrapper:
         """Get default tolerance from FMU's default experiment, if defined."""
         de = self.model_description.defaultExperiment
         if de is not None:
-            return getattr(de, 'tolerance', None)
+            return getattr(de, "tolerance", None)
         return None
 
     @property
     def needs_completed_integrator_step(self) -> bool:
         """Check if FMU requires completedIntegratorStep notifications (Model Exchange only)."""
-        if self.mode != 'model_exchange':
+        if self.mode != "model_exchange":
             return False
         me = self.model_description.modelExchange
-        return not getattr(me, 'completedIntegratorStepNotNeeded', False)
+        return not getattr(me, "completedIntegratorStepNotNeeded", False)
 
     @property
     def provides_jacobian(self) -> bool:
         """Check if FMU provides directional derivatives for Jacobian computation."""
-        if self.mode == 'model_exchange':
+        if self.mode == "model_exchange":
             me = self.model_description.modelExchange
-            return getattr(me, 'providesDirectionalDerivative', False)
-        elif self.mode == 'cosimulation':
+            return getattr(me, "providesDirectionalDerivative", False)
+        elif self.mode == "cosimulation":
             cs = self.model_description.coSimulation
-            return getattr(cs, 'providesDirectionalDerivative', False)
+            return getattr(cs, "providesDirectionalDerivative", False)
         return False
 
     def get_state_jacobian(self):
@@ -452,7 +459,7 @@ class FMUWrapper:
         jacobian : np.ndarray
             n_states x n_states Jacobian matrix, or None if not supported
         """
-        if self.mode != 'model_exchange':
+        if self.mode != "model_exchange":
             raise RuntimeError("get_state_jacobian() is only available for Model Exchange FMUs")
 
         if not self.provides_jacobian:
@@ -468,9 +475,7 @@ class FMUWrapper:
         for j in range(self.n_states):
             seed[j] = 1.0
             col = self.fmu.getDirectionalDerivative(
-                self._derivative_refs,
-                self._state_refs,
-                seed.tolist()
+                self._derivative_refs, self._state_refs, seed.tolist()
             )
             jacobian[:, j] = col
             seed[j] = 0.0
@@ -536,11 +541,11 @@ class FMUWrapper:
         vr = variable.valueReference
         var_type = variable.type
 
-        if var_type in ['Real', 'Float64', 'Float32']:
+        if var_type in ["Real", "Float64", "Float32"]:
             self._ops.set_real(self.fmu, [vr], [float(value)])
-        elif var_type in ['Integer', 'Int64', 'Int32', 'Int16', 'Int8']:
+        elif var_type in ["Integer", "Int64", "Int32", "Int16", "Int8"]:
             self._ops.set_integer(self.fmu, [vr], [int(value)])
-        elif var_type == 'Boolean':
+        elif var_type == "Boolean":
             self.fmu.setBoolean([vr], [bool(value)])
         else:
             raise ValueError(f"Unsupported variable type: {var_type}")
@@ -564,7 +569,7 @@ class FMUWrapper:
 
     def do_step(self, current_time, step_size) -> StepResult:
         """Perform a co-simulation step."""
-        if self.mode != 'cosimulation':
+        if self.mode != "cosimulation":
             raise RuntimeError("do_step() is only available for Co-Simulation FMUs")
         return self._ops.do_step(self.fmu, current_time, step_size)
 
@@ -574,13 +579,13 @@ class FMUWrapper:
 
     def set_time(self, time):
         """Set current time (Model Exchange only)."""
-        if self.mode != 'model_exchange':
+        if self.mode != "model_exchange":
             raise RuntimeError("set_time() is only available for Model Exchange FMUs")
         self.fmu.setTime(time)
 
     def set_continuous_states(self, states):
         """Set continuous states (Model Exchange only)."""
-        if self.mode != 'model_exchange':
+        if self.mode != "model_exchange":
             raise RuntimeError("set_continuous_states() is only available for Model Exchange FMUs")
         if self.n_states == 0:
             return
@@ -590,7 +595,7 @@ class FMUWrapper:
 
     def get_continuous_states(self):
         """Get continuous states (Model Exchange only)."""
-        if self.mode != 'model_exchange':
+        if self.mode != "model_exchange":
             raise RuntimeError("get_continuous_states() is only available for Model Exchange FMUs")
         if self.n_states == 0:
             return np.array([])
@@ -600,13 +605,13 @@ class FMUWrapper:
 
     def get_derivatives(self):
         """Get state derivatives (Model Exchange only)."""
-        if self.mode != 'model_exchange':
+        if self.mode != "model_exchange":
             raise RuntimeError("get_derivatives() is only available for Model Exchange FMUs")
         return self._ops.get_derivatives(self.fmu, self.n_states)
 
     def get_event_indicators(self):
         """Get event indicators (Model Exchange only)."""
-        if self.mode != 'model_exchange':
+        if self.mode != "model_exchange":
             raise RuntimeError("get_event_indicators() is only available for Model Exchange FMUs")
         if self.n_event_indicators == 0:
             return np.array([])
@@ -616,19 +621,21 @@ class FMUWrapper:
 
     def enter_event_mode(self):
         """Enter event mode (Model Exchange only)."""
-        if self.mode != 'model_exchange':
+        if self.mode != "model_exchange":
             raise RuntimeError("enter_event_mode() is only available for Model Exchange FMUs")
         self.fmu.enterEventMode()
 
     def enter_continuous_time_mode(self):
         """Enter continuous time mode (Model Exchange only)."""
-        if self.mode != 'model_exchange':
-            raise RuntimeError("enter_continuous_time_mode() is only available for Model Exchange FMUs")
+        if self.mode != "model_exchange":
+            raise RuntimeError(
+                "enter_continuous_time_mode() is only available for Model Exchange FMUs"
+            )
         self.fmu.enterContinuousTimeMode()
 
     def update_discrete_states(self) -> EventInfo:
         """Update discrete states during event iteration (Model Exchange only)."""
-        if self.mode != 'model_exchange':
+        if self.mode != "model_exchange":
             raise RuntimeError("update_discrete_states() is only available for Model Exchange FMUs")
         return self._ops.update_discrete_states(self.fmu)
 
@@ -642,8 +649,10 @@ class FMUWrapper:
         terminate_simulation : bool
             whether FMU requests simulation termination
         """
-        if self.mode != 'model_exchange':
-            raise RuntimeError("completed_integrator_step() is only available for Model Exchange FMUs")
+        if self.mode != "model_exchange":
+            raise RuntimeError(
+                "completed_integrator_step() is only available for Model Exchange FMUs"
+            )
         return self.fmu.completedIntegratorStep()
 
     def __del__(self):
@@ -651,5 +660,6 @@ class FMUWrapper:
         try:
             self.terminate()
             self.free_instance()
-        except:
+        except Exception:
+            # Best-effort cleanup; the FMU may already be torn down.
             pass

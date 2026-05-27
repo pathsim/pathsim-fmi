@@ -22,8 +22,8 @@ __all__ = ["__version__"]
 try:
     import fmpy  # noqa: F401  # presence check
 
-    from .wrapper import FMUWrapper
     from .blocks import CoSimulationFMU, ModelExchangeFMU
+    from .wrapper import FMUWrapper
 
     __all__ += ["FMUWrapper", "CoSimulationFMU", "ModelExchangeFMU"]
 except ImportError:

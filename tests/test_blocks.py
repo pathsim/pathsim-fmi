@@ -8,14 +8,11 @@
 # IMPORTS ==============================================================================
 
 import unittest
-import numpy as np
 
 from pathsim_fmi import CoSimulationFMU, ModelExchangeFMU
 
-from pathsim.solvers._solver import Solver
-
-
 # TESTS ================================================================================
+
 
 class TestCoSimulationFMU(unittest.TestCase):
     """
@@ -27,13 +24,12 @@ class TestCoSimulationFMU(unittest.TestCase):
 
     def test_import_error_without_fmpy(self):
         """Test that ImportError is raised when FMPy is not available"""
-        import sys
-        import importlib
 
         # This test only works if FMPy is not installed
         # If FMPy is installed, we skip this test
         try:
             import fmpy
+
             self.skipTest("FMPy is installed, cannot test ImportError case")
         except ImportError:
             pass
@@ -55,13 +51,12 @@ class TestModelExchangeFMU(unittest.TestCase):
 
     def test_import_error_without_fmpy(self):
         """Test that ImportError is raised when FMPy is not available"""
-        import sys
-        import importlib
 
         # This test only works if FMPy is not installed
         # If FMPy is installed, we skip this test
         try:
             import fmpy
+
             self.skipTest("FMPy is installed, cannot test ImportError case")
         except ImportError:
             pass
@@ -75,5 +70,5 @@ class TestModelExchangeFMU(unittest.TestCase):
 
 # RUN TESTS LOCALLY ====================================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

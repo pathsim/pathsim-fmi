@@ -13,9 +13,8 @@ import unittest
 from pathlib import Path
 
 import numpy as np
-
-from pathsim import Simulation, Connection
-from pathsim.blocks import Source, Scope
+from pathsim import Connection, Simulation
+from pathsim.blocks import Scope
 from pathsim.solvers import RKDP54
 
 from pathsim_fmi import CoSimulationFMU, ModelExchangeFMU

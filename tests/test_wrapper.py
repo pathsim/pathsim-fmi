@@ -7,12 +7,11 @@
 
 # IMPORTS ==============================================================================
 
-import unittest
-import numpy as np
 import os
-
+import unittest
 from pathlib import Path
 
+import numpy as np
 
 # Path to test FMU files
 TEST_DATA_DIR = Path(__file__).parent / "data"
@@ -22,12 +21,14 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 def fmpy_available():
     try:
         import fmpy
+
         return True
     except ImportError:
         return False
 
 
 # TESTS ================================================================================
+
 
 class TestFMUWrapperImport(unittest.TestCase):
     """Test FMUWrapper import behavior"""
@@ -62,33 +63,35 @@ class TestFMUWrapperCoSimulation(unittest.TestCase):
 
     def setUp(self):
         from pathsim_fmi import FMUWrapper
+
         self.FMUWrapper = FMUWrapper
 
     def test_init_cosimulation(self):
         """Test FMUWrapper initialization for co-simulation"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='cosimulation')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="cosimulation")
 
-        self.assertEqual(wrapper.mode, 'cosimulation')
+        self.assertEqual(wrapper.mode, "cosimulation")
         self.assertIsNotNone(wrapper.model_description)
         self.assertIsNotNone(wrapper.fmu)
 
     def test_invalid_mode(self):
         """Test that invalid mode raises ValueError"""
         with self.assertRaises(ValueError) as context:
-            self.FMUWrapper(str(self.fmu_path), mode='invalid_mode')
+            self.FMUWrapper(str(self.fmu_path), mode="invalid_mode")
 
         self.assertIn("Invalid mode", str(context.exception))
 
     def test_fmi_version_detection(self):
         """Test FMI version is correctly detected"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='cosimulation')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="cosimulation")
 
-        self.assertTrue(wrapper.fmi_version.startswith('2.') or
-                       wrapper.fmi_version.startswith('3.'))
+        self.assertTrue(
+            wrapper.fmi_version.startswith("2.") or wrapper.fmi_version.startswith("3.")
+        )
 
     def test_variable_maps(self):
         """Test that input/output variable maps are built"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='cosimulation')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="cosimulation")
 
         self.assertIsInstance(wrapper.input_refs, dict)
         self.assertIsInstance(wrapper.output_refs, dict)
@@ -96,7 +99,7 @@ class TestFMUWrapperCoSimulation(unittest.TestCase):
 
     def test_create_port_registers(self):
         """Test port register creation"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='cosimulation')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="cosimulation")
         wrapper.initialize(start_time=0.0)
 
         inputs, outputs = wrapper.create_port_registers()
@@ -106,7 +109,7 @@ class TestFMUWrapperCoSimulation(unittest.TestCase):
 
     def test_initialize_and_step(self):
         """Test FMU initialization and stepping"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='cosimulation')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="cosimulation")
         wrapper.initialize(start_time=0.0)
 
         # Perform a step
@@ -116,7 +119,7 @@ class TestFMUWrapperCoSimulation(unittest.TestCase):
 
     def test_default_step_size(self):
         """Test default step size property"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='cosimulation')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="cosimulation")
 
         # May be None if not defined in FMU
         step_size = wrapper.default_step_size
@@ -124,7 +127,7 @@ class TestFMUWrapperCoSimulation(unittest.TestCase):
 
     def test_reset(self):
         """Test FMU reset"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='cosimulation')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="cosimulation")
         wrapper.initialize(start_time=0.0)
 
         # Step forward
@@ -154,33 +157,34 @@ class TestFMUWrapperModelExchange(unittest.TestCase):
 
     def setUp(self):
         from pathsim_fmi import FMUWrapper
+
         self.FMUWrapper = FMUWrapper
 
     def test_init_model_exchange(self):
         """Test FMUWrapper initialization for model exchange"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
 
-        self.assertEqual(wrapper.mode, 'model_exchange')
+        self.assertEqual(wrapper.mode, "model_exchange")
         self.assertIsNotNone(wrapper.model_description)
         self.assertIsNotNone(wrapper.fmu)
 
     def test_n_states(self):
         """Test number of continuous states"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
 
         # BouncingBall has 2 states: height and velocity
         self.assertEqual(wrapper.n_states, 2)
 
     def test_n_event_indicators(self):
         """Test number of event indicators"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
 
         # BouncingBall has 1 event indicator (ground contact)
         self.assertGreaterEqual(wrapper.n_event_indicators, 1)
 
     def test_initialize_model_exchange(self):
         """Test Model Exchange FMU initialization"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
         event_info = wrapper.initialize(start_time=0.0, tolerance=1e-6)
 
         # event_info may be None for FMI 2.0
@@ -189,7 +193,7 @@ class TestFMUWrapperModelExchange(unittest.TestCase):
 
     def test_enter_continuous_time_mode(self):
         """Test entering continuous time mode"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
         wrapper.initialize(start_time=0.0, tolerance=1e-6)
 
         # Should not raise
@@ -197,7 +201,7 @@ class TestFMUWrapperModelExchange(unittest.TestCase):
 
     def test_get_continuous_states(self):
         """Test getting continuous states"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
         wrapper.initialize(start_time=0.0, tolerance=1e-6)
         wrapper.enter_continuous_time_mode()
 
@@ -208,7 +212,7 @@ class TestFMUWrapperModelExchange(unittest.TestCase):
 
     def test_set_continuous_states(self):
         """Test setting continuous states"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
         wrapper.initialize(start_time=0.0, tolerance=1e-6)
         wrapper.enter_continuous_time_mode()
 
@@ -220,7 +224,7 @@ class TestFMUWrapperModelExchange(unittest.TestCase):
 
     def test_get_derivatives(self):
         """Test getting state derivatives"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
         wrapper.initialize(start_time=0.0, tolerance=1e-6)
         wrapper.enter_continuous_time_mode()
 
@@ -232,7 +236,7 @@ class TestFMUWrapperModelExchange(unittest.TestCase):
 
     def test_get_event_indicators(self):
         """Test getting event indicators"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
         wrapper.initialize(start_time=0.0, tolerance=1e-6)
         wrapper.enter_continuous_time_mode()
 
@@ -244,7 +248,7 @@ class TestFMUWrapperModelExchange(unittest.TestCase):
 
     def test_event_mode_cycle(self):
         """Test entering and exiting event mode"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
         wrapper.initialize(start_time=0.0, tolerance=1e-6)
         wrapper.enter_continuous_time_mode()
 
@@ -261,7 +265,7 @@ class TestFMUWrapperModelExchange(unittest.TestCase):
 
     def test_completed_integrator_step(self):
         """Test completed integrator step notification"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
         wrapper.initialize(start_time=0.0, tolerance=1e-6)
         wrapper.enter_continuous_time_mode()
 
@@ -274,21 +278,21 @@ class TestFMUWrapperModelExchange(unittest.TestCase):
 
     def test_needs_completed_integrator_step(self):
         """Test needs_completed_integrator_step property"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
 
         # Should be a boolean
         self.assertIsInstance(wrapper.needs_completed_integrator_step, bool)
 
     def test_provides_jacobian(self):
         """Test provides_jacobian property"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
 
         # Should be a boolean
         self.assertIsInstance(wrapper.provides_jacobian, bool)
 
     def test_model_exchange_mode_errors_on_cosim_methods(self):
         """Test that co-simulation methods raise errors in model exchange mode"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
         wrapper.initialize(start_time=0.0)
 
         with self.assertRaises(RuntimeError):
@@ -296,7 +300,7 @@ class TestFMUWrapperModelExchange(unittest.TestCase):
 
     def test_set_variable(self):
         """Test setting a variable by name"""
-        wrapper = self.FMUWrapper(str(self.fmu_path), mode='model_exchange')
+        wrapper = self.FMUWrapper(str(self.fmu_path), mode="model_exchange")
         wrapper.initialize(start_values={"e": 0.8}, start_time=0.0, tolerance=1e-6)
 
         # Setting start values should work during initialization
@@ -329,7 +333,7 @@ class TestEventInfo(unittest.TestCase):
             nominals_changed=True,
             values_changed=True,
             next_event_time_defined=True,
-            next_event_time=1.5
+            next_event_time=1.5,
         )
 
         self.assertTrue(info.discrete_states_need_update)
@@ -362,7 +366,7 @@ class TestStepResult(unittest.TestCase):
             event_encountered=True,
             terminate_simulation=False,
             early_return=True,
-            last_successful_time=2.5
+            last_successful_time=2.5,
         )
 
         self.assertTrue(result.event_encountered)
@@ -373,5 +377,5 @@ class TestStepResult(unittest.TestCase):
 
 # RUN TESTS LOCALLY ====================================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -6,22 +6,23 @@
 
 # IMPORTS ==============================================================================
 
-import unittest
-import numpy as np
 import os
-
+import unittest
 from pathlib import Path
+
+import numpy as np
 
 TEST_DIR = Path(__file__).parent
 TEST_DATA_DIR = TEST_DIR / "data"
 
-from pathsim import Simulation, Connection
+from pathsim import Connection, Simulation
 from pathsim.blocks import Scope
 from pathsim.solvers import RKBS32, RKDP54
+
 from pathsim_fmi import ModelExchangeFMU
 
-
 # TESTCASES ============================================================================
+
 
 @unittest.skipIf(os.getenv("CI") == "true", "FMU tests require platform-specific binaries")
 class TestModelExchangeFMUBouncingBall(unittest.TestCase):
@@ -41,7 +42,7 @@ class TestModelExchangeFMUBouncingBall(unittest.TestCase):
             instance_name="bouncing_ball",
             start_values={"e": 0.7},
             tolerance=1e-10,
-            verbose=False
+            verbose=False,
         )
         self.sco = Scope(labels=["h", "v"])
 
@@ -56,13 +57,13 @@ class TestModelExchangeFMUBouncingBall(unittest.TestCase):
             Solver=RKBS32,
             tolerance_lte_rel=1e-6,
             tolerance_lte_abs=1e-9,
-            log=False
+            log=False,
         )
 
     def test_fmu_wrapper_accessible(self):
         """Test that fmu_wrapper is accessible"""
         self.assertIsNotNone(self.fmu.fmu_wrapper)
-        self.assertEqual(self.fmu.fmu_wrapper.mode, 'model_exchange')
+        self.assertEqual(self.fmu.fmu_wrapper.mode, "model_exchange")
 
     def test_fmu_states(self):
         """Test FMU has correct number of states"""
@@ -76,9 +77,9 @@ class TestModelExchangeFMUBouncingBall(unittest.TestCase):
         """Test that simulation runs without errors"""
         result = self.sim.run(2.0)
 
-        self.assertIn('total_steps', result)
-        self.assertIn('successful_steps', result)
-        self.assertGreater(result['successful_steps'], 0)
+        self.assertIn("total_steps", result)
+        self.assertIn("successful_steps", result)
+        self.assertGreater(result["successful_steps"], 0)
 
     def test_bouncing_behavior(self):
         """Test that ball bounces (height stays non-negative)"""
@@ -111,7 +112,7 @@ class TestModelExchangeFMUBouncingBall(unittest.TestCase):
         # Find local maxima of height
         local_max_indices = []
         for i in range(1, len(h) - 1):
-            if h[i] > h[i-1] and h[i] > h[i+1]:
+            if h[i] > h[i - 1] and h[i] > h[i + 1]:
                 local_max_indices.append(i)
 
         if len(local_max_indices) >= 2:
@@ -158,7 +159,7 @@ class TestModelExchangeFMUVanDerPol(unittest.TestCase):
                 "x1": 0.0,
             },
             tolerance=1e-8,
-            verbose=False
+            verbose=False,
         )
         self.sco = Scope(labels=["x0", "x1"])
 
@@ -173,7 +174,7 @@ class TestModelExchangeFMUVanDerPol(unittest.TestCase):
             Solver=RKDP54,
             tolerance_lte_rel=1e-6,
             tolerance_lte_abs=1e-9,
-            log=False
+            log=False,
         )
 
     def test_fmu_states(self):
@@ -188,8 +189,8 @@ class TestModelExchangeFMUVanDerPol(unittest.TestCase):
         """Test that simulation runs without errors"""
         result = self.sim.run(10.0)
 
-        self.assertIn('total_steps', result)
-        self.assertGreater(result['successful_steps'], 0)
+        self.assertIn("total_steps", result)
+        self.assertGreater(result["successful_steps"], 0)
 
     def test_oscillation(self):
         """Test that the system oscillates"""
@@ -213,7 +214,7 @@ class TestModelExchangeFMUVanDerPol(unittest.TestCase):
 
         # For Van der Pol with mu=1, the limit cycle amplitude is approximately 2
         # After sufficient time, max amplitude should be close to 2
-        late_x0 = x0[len(x0)//2:]  # Second half of simulation
+        late_x0 = x0[len(x0) // 2 :]  # Second half of simulation
         max_amplitude = np.max(np.abs(late_x0))
 
         self.assertGreater(max_amplitude, 1.5)
@@ -250,11 +251,7 @@ class TestModelExchangeFMUBlockAPI(unittest.TestCase):
 
     def test_fmu_wrapper_model_description(self):
         """Test accessing model description through fmu_wrapper"""
-        fmu = ModelExchangeFMU(
-            fmu_path=str(self.fmu_path),
-            instance_name="test",
-            tolerance=1e-10
-        )
+        fmu = ModelExchangeFMU(fmu_path=str(self.fmu_path), instance_name="test", tolerance=1e-10)
 
         md = fmu.fmu_wrapper.model_description
         self.assertIsNotNone(md)
@@ -262,52 +259,32 @@ class TestModelExchangeFMUBlockAPI(unittest.TestCase):
 
     def test_fmu_wrapper_fmi_version(self):
         """Test accessing FMI version through fmu_wrapper"""
-        fmu = ModelExchangeFMU(
-            fmu_path=str(self.fmu_path),
-            instance_name="test",
-            tolerance=1e-10
-        )
+        fmu = ModelExchangeFMU(fmu_path=str(self.fmu_path), instance_name="test", tolerance=1e-10)
 
         version = fmu.fmu_wrapper.fmi_version
-        self.assertTrue(version.startswith('2.') or version.startswith('3.'))
+        self.assertTrue(version.startswith("2.") or version.startswith("3."))
 
     def test_fmu_wrapper_n_states(self):
         """Test accessing n_states through fmu_wrapper"""
-        fmu = ModelExchangeFMU(
-            fmu_path=str(self.fmu_path),
-            instance_name="test",
-            tolerance=1e-10
-        )
+        fmu = ModelExchangeFMU(fmu_path=str(self.fmu_path), instance_name="test", tolerance=1e-10)
 
         self.assertEqual(fmu.fmu_wrapper.n_states, 2)
 
     def test_fmu_wrapper_n_event_indicators(self):
         """Test accessing n_event_indicators through fmu_wrapper"""
-        fmu = ModelExchangeFMU(
-            fmu_path=str(self.fmu_path),
-            instance_name="test",
-            tolerance=1e-10
-        )
+        fmu = ModelExchangeFMU(fmu_path=str(self.fmu_path), instance_name="test", tolerance=1e-10)
 
         self.assertGreaterEqual(fmu.fmu_wrapper.n_event_indicators, 1)
 
     def test_fmu_wrapper_output_refs(self):
         """Test accessing output_refs through fmu_wrapper"""
-        fmu = ModelExchangeFMU(
-            fmu_path=str(self.fmu_path),
-            instance_name="test",
-            tolerance=1e-10
-        )
+        fmu = ModelExchangeFMU(fmu_path=str(self.fmu_path), instance_name="test", tolerance=1e-10)
 
         self.assertIsInstance(fmu.fmu_wrapper.output_refs, dict)
 
     def test_events_list_created(self):
         """Test that events list is properly created"""
-        fmu = ModelExchangeFMU(
-            fmu_path=str(self.fmu_path),
-            instance_name="test",
-            tolerance=1e-10
-        )
+        fmu = ModelExchangeFMU(fmu_path=str(self.fmu_path), instance_name="test", tolerance=1e-10)
 
         # Should have at least one event (for event indicators)
         self.assertGreater(len(fmu.events), 0)
@@ -318,7 +295,7 @@ class TestModelExchangeFMUBlockAPI(unittest.TestCase):
             fmu_path=str(self.fmu_path),
             instance_name="test",
             tolerance=1e-10,
-            verbose=True
+            verbose=True,
         )
 
         # Just verify it initialized without error
@@ -327,5 +304,5 @@ class TestModelExchangeFMUBlockAPI(unittest.TestCase):
 
 # RUN TESTS LOCALLY ====================================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

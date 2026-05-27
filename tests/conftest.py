@@ -8,6 +8,7 @@ error checks, dataclass tests) keep running everywhere.
 """
 
 import platform
+
 import pytest
 
 _DARWIN_ARM = platform.system() == "Darwin" and platform.machine() == "arm64"

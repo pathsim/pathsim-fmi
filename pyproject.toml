@@ -55,13 +55,6 @@ where = ["src"]
 [tool.setuptools_scm]
 write_to = "src/pathsim_fmi/_version.py"
 
-[tool.ruff]
-line-length = 88
-target-version = "py310"
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "I"]
-
 [tool.mypy]
 files = ["src/pathsim_fmi"]
 python_version = "3.10"

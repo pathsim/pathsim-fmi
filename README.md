@@ -28,7 +28,10 @@ top of [FMPy](https://github.com/CATIA-Systems/FMPy).
 |-------|-------------|----------------|
 | `CoSimulationFMU` | Wrap a Co-Simulation FMU, advanced on a fixed grid `dt` via `fmi*DoStep` | `fmu_path`, `dt`, `start_values` |
 | `ModelExchangeFMU` | Wrap a Model-Exchange FMU, integrated by PathSim's solver of choice | `fmu_path`, `start_values` |
-| `FMUWrapper` | Lower-level version-agnostic wrapper around FMPy (FMI 2.0 / 3.0) | `fmu_path` |
+
+Both blocks build on `FMUWrapper`, a lower-level version-agnostic wrapper
+around FMPy (FMI 2.0 / 3.0) that you can use directly if you need finer
+control than the block API offers.
 
 ## Install
 
