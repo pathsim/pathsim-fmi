@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="https://raw.githubusercontent.com/pathsim/pathsim-fmi/master/docs/source/logos/fmi_logo.png" width="300" alt="PathSim-FMI Logo" />
+</p>
+
+<p align="center">
   <strong>FMI/FMU co-simulation toolbox for PathSim</strong>
 </p>
 
